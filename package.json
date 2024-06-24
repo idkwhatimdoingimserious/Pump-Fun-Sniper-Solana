@@ -2,10 +2,10 @@
   "name": "pumpfuntool",
   "version": "1.0.0",
   "description": "",
-  "main": "main.js",
+  "main": "pump_fun.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node main.js"
+    "start": "node pump_fun.js"
   },
   "author": "",
   "license": "ISC",
