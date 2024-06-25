@@ -15,6 +15,7 @@ const { confirm_transaction } = require('sol-web3-1.45');
 const fetch = require('node-fetch');
 const bs58 = require('bs58');
 const fs = require('fs');
+const path = require('path');
 
 const GLOBAL = new PublicKey("4wTV1YmiEkRvAtNtsSGPtUrqRYQMe5SKy2uB4Jjaxnjf");
 const FEE_RECIPIENT = new PublicKey("CebN5WGQ4jvEPvsVU4EoHEpgzq1VV7AbicfhtW4xC9iM");
@@ -25,13 +26,25 @@ const PUMP_FUN_PROGRAM = new PublicKey("6EF8rrecthR5Dkzon8Nwu78hRvfCKubJ14M5uBEw
 const PUMP_FUN_ACCOUNT = new PublicKey("Ce6TQqeHC9p8KetsN6JsjHK7UTZk7nasjjnr7XxXp9F1");
 const SYSTEM_PROGRAM_ID = SystemProgram.programId;
 
-const PRIVATE_KEY = 'PRIVATE_KEY_HERE';
+const PRIVATE_KEY = 'YOUR_PRIVATE_KEY_HERE';
 const BUY_AMOUNT_SOL = 0.0001;
 const PROFIT_PERCENTAGE = 10000;
-const CUSTOM_RPC_URL = 'RPC_URL_HERE';
+const CUSTOM_RPC_URL = 'YOUR_RPC_URL_HERE';
 
-let purchasedCoins = [];
+const STATE_FILE = path.join(__dirname, 'purchasedCoins.json');
+const savePurchasedCoins = (coins) => {
+    fs.writeFileSync(STATE_FILE, JSON.stringify(coins, null, 2), 'utf-8');
+};
 
+const loadPurchasedCoins = () => {
+    if (fs.existsSync(STATE_FILE)) {
+        const data = fs.readFileSync(STATE_FILE, 'utf-8');
+        return JSON.parse(data);
+    }
+    return [];
+};
+
+let purchasedCoins = loadPurchasedCoins();
 
 const getKeyPairFromPrivateKey = (key) => Keypair.fromSecretKey(new Uint8Array(bs58.decode(key)));
 
@@ -61,6 +74,11 @@ const getKingOfTheHillCoin = async () => {
     return response.json();
 };
 
+const fetchLatestCoins = async () => {
+    const response = await fetch('https://frontend-api.pump.fun/coins?offset=0&limit=10&sort=created_timestamp&order=DESC&includeNsfw=true');
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+    return response.json();
+};
 
 const createTransaction = async (connection, instructions, payer, priorityFeeInSol = 0) => {
     const modifyComputeUnits = ComputeBudgetProgram.setComputeUnitLimit({ units: 1400000 });
@@ -96,6 +114,54 @@ const sendAndConfirmTransactionWrapper = async (connection, transaction, signers
             transaction.recentBlockhash = (await connection.getLatestBlockhash('finalized')).blockhash;
         }
     }
+};
+
+const displayLatestCoins = async () => {
+    const latestCoins = await fetchLatestCoins();
+    console.log('Latest 10 Coins:');
+    latestCoins.forEach((coin, index) => {
+      
+    });
+    const inquirer = await import('inquirer');
+    const answers = await inquirer.default.prompt([
+        {
+            type: 'list',
+            name: 'selectedCoin',
+            message: 'Select a coin to view details or return to menu:',
+            choices: latestCoins.map((coin, index) => ({
+                name: `${coin.name} (${coin.symbol})`,
+                value: index
+            })).concat({ name: 'Return to menu', value: 'return' })
+        }
+    ]);
+
+    return answers.selectedCoin === 'return' ? null : latestCoins[answers.selectedCoin];
+};
+
+const displayCoinDetails = async (coin) => {
+    console.log(`
+    Name: ${coin.name}
+    Symbol: ${coin.symbol}
+    Description: ${coin.description}
+    Creator: ${coin.creator}
+    USD Market Cap: ${coin.usd_market_cap}
+    SOL Market Cap: ${coin.market_cap}
+    Created At: ${new Date(coin.created_timestamp).toLocaleString()}
+    `);
+    const inquirer = await import('inquirer');
+    const answers = await inquirer.default.prompt([
+        {
+            type: 'list',
+            name: 'action',
+            message: `What would you like to do with ${coin.name}?`,
+            choices: [
+                { name: 'Buy this coin', value: 'buy' },
+                { name: 'Return to latest 10 coins', value: 'return' }
+            ]
+        }
+    ]);
+
+    return answers.action;
 };
 
 const buyCoin = async (connection, payer, coinData, solIn, priorityFeeInSol = 0.001, slippageDecimal = 0.25) => {
@@ -164,7 +230,7 @@ const buyCoin = async (connection, payer, coinData, solIn, priorityFeeInSol = 0.
 const sellCoin = async (connection, payer, coinData, tokenBalance, priorityFeeInSol = 0.001) => {
     try {
         console.log('Selling coin with data:', JSON.stringify(coinData, null, 2));
-        
+
         const owner = payer.publicKey;
         const mintPubkey = new PublicKey(coinData.mint);
 
@@ -223,7 +289,6 @@ const monitorAndSell = (connection, payer, mint, boughtTokens, buyPrice) => {
     }, 10000); 
 };
 
-
 const viewPositions = async (connection, payer) => {
     const inquirer = await import('inquirer');
 
@@ -281,7 +346,8 @@ const viewPositions = async (connection, payer) => {
             if (manageAnswers.action === 'sell') {
                 await sellCoin(connection, payer, coinData, coin.amount);
                 console.log(`Sold ${coin.amount} tokens of ${coin.name} (${coin.symbol}).`);
-                purchasedCoins.splice(answers.selectedCoin, 1); 
+                purchasedCoins.splice(answers.selectedCoin, 1);
+                savePurchasedCoins(purchasedCoins);
                 break;
             } else if (manageAnswers.action === 'return') {
                 break;
@@ -292,12 +358,15 @@ const viewPositions = async (connection, payer) => {
     }
 };
 
+
+
 const mainMenu = async () => {
     const inquirer = await import('inquirer');
 
     const choices = [
         { name: 'Purchase the latest coin', value: 'buy_latest_coin' },
         { name: 'Purchase the King of the Hill coin', value: 'buy_king_coin' },
+        { name: 'View the latest 10 coins', value: 'view_latest_coins' },
         { name: 'View positions', value: 'view_positions' },
         { name: 'Exit', value: 'exit' }
     ];
@@ -345,15 +414,41 @@ const mainMenu = async () => {
 
                 await confirm_transaction(initialData); 
 
-
-
                 const buyPrice = coin.market_cap / coin.total_supply;
                 console.log(`Bought ${boughtTokens} tokens at ${buyPrice.toFixed(9)} SOL per token.`);
                 purchasedCoins.push({ name: coin.name, symbol: coin.symbol, amount: boughtTokens, price: buyPrice, mint: coin.mint });
+                savePurchasedCoins(purchasedCoins);
                 console.log(`Monitoring price. Will sell when profit reaches ${PROFIT_PERCENTAGE}%...`);
 
                 monitorAndSell(connection, payer, coin.mint, boughtTokens, buyPrice);
                 console.log('Returning to menu...');
+            } else if (action === 'view_latest_coins') {
+                while (true) {
+                    const selectedCoin = await displayLatestCoins();
+                    if (!selectedCoin) break;
+
+                    const coinAction = await displayCoinDetails(selectedCoin);
+                    if (coinAction === 'buy') {
+                        console.log(`Buying ${BUY_AMOUNT_SOL} SOL worth of ${selectedCoin.symbol}...`);
+
+                        const boughtTokens = await buyCoin(connection, payer, selectedCoin, BUY_AMOUNT_SOL);
+                        if (!boughtTokens) {
+                            console.error(`Failed to buy ${selectedCoin.name}. Returning to menu...`);
+                            continue;
+                        }
+
+                        await confirm_transaction(initialData); 
+
+                        const buyPrice = selectedCoin.market_cap / selectedCoin.total_supply;
+                        console.log(`Bought ${boughtTokens} tokens at ${buyPrice.toFixed(9)} SOL per token.`);
+                        purchasedCoins.push({ name: selectedCoin.name, symbol: selectedCoin.symbol, amount: boughtTokens, price: buyPrice, mint: selectedCoin.mint });
+                        savePurchasedCoins(purchasedCoins);
+                        console.log(`Monitoring price. Will sell when profit reaches ${PROFIT_PERCENTAGE}%...`);
+
+                        monitorAndSell(connection, payer, selectedCoin.mint, boughtTokens, buyPrice);
+                        console.log('Returning to menu...');
+                    }
+                }
             } else if (action === 'view_positions') {
                 await viewPositions(connection, payer);
             }
