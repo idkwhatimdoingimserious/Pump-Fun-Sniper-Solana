@@ -3,6 +3,11 @@ Solana tool to buy the latests coins on Pump.Fun as well as the King of The Hill
 
 contact me at tg @ccc3666 with any questions!
 
+
+
+EDIT: LATEST UPDATE NOW ALSO PULLS LATEST 10 COINS MADE AND ALLOWS YOU TO SEE MORE INFO/BUY EACH INDIVIDUALLY. ALSO SAVES YOUR POSITIONS AND LOADS THEM ON RELOAD.
+
+
 To run: 
 
 Open your terminal.
