@@ -17,6 +17,8 @@
       "sol-web3-1.45": "latest",
       "bs58": "latest",
       "fs": "latest",
-      "path": "latest"
+      "path": "latest",
+      "axios": "latest",
+      "bs58": "latest".
     }
   }
