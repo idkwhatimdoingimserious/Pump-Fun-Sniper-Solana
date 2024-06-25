@@ -1,30 +1,66 @@
 # Pump-Fun-Sniper-Solana
-Solana tool to buy the latests coins on Pump.Fun as well as the King of The Hill coins. Set your inteded profit % to automatically sell once reached. Custom RPC support. Simply add your private key, the RPC you wish to use and you're ready to go. 
 
-contact me at tg @ccc3666 with any questions!
+A Solana tool to buy the latest coins on Pump.Fun, including King of The Hill coins. Set your intended profit percentage to automatically sell once reached. With custom RPC support, simply add your private key and the RPC you wish to use, and you're ready to go.
 
+**Contact:**  
+For any questions, reach out to me on Telegram: @ccc3666.
 
+## Features
 
-EDIT: LATEST UPDATE NOW ALSO PULLS LATEST 10 COINS MADE AND ALLOWS YOU TO SEE MORE INFO/BUY EACH INDIVIDUALLY. ALSO SAVES YOUR POSITIONS AND LOADS THEM ON RELOAD.
+- **Automated Trading:** Automatically buy the latest coins on Pump.Fun and sell them once your target profit percentage is reached.
+- **King of The Hill Coins:** Support for buying the top-performing coins.
+- **Custom RPC Support:** Use your preferred Solana RPC for transactions.
+- **User-Friendly Setup:** Easy setup by adding your private key and RPC URL.
+- **Latest Coins Information:** Pulls the latest 10 coins created and allows you to view more information and buy each individually.
+- **Persistent Positions:** Saves your positions and reloads them on restart.
 
+## Latest Update
 
-To run: 
+- **New Feature:** Now pulls the latest 10 coins created on Pump.Fun.
+- **Enhanced Functionality:** Allows you to see more information about each coin and buy them individually.
+- **Position Persistence:** Automatically saves your positions and reloads them upon restart.
 
-Open your terminal.
+## Getting Started
 
-git clone https://github.com/idkwhatimdoingimserious/Pump-Fun-Sniper-Solana/
+### Prerequisites
 
-Open the pump_fun.js file and add your private key and RPC url
+- Node.js installed on your machine
+- A private key and RPC URL for the Solana network
 
-back in the terminal:
+### Installation
 
-cd Pump-Fun-Sniper-Solana
+1. Open your terminal.
 
-npm install
+2. Clone the repository:
 
-npm start
+    ```bash
+    git clone https://github.com/idkwhatimdoingimserious/Pump-Fun-Sniper-Solana/
+    ```
 
+3. Navigate to the project directory:
 
+    ```bash
+    cd Pump-Fun-Sniper-Solana
+    ```
+
+4. Install the required dependencies:
+
+    ```bash
+    npm install
+    ```
+
+### Configuration
+
+1. Open the `pump_fun.js` file.
+2. Add your private key and RPC URL in the appropriate fields.
+
+### Running the Tool
+
+1. Start the tool by running:
+
+    ```bash
+    npm start
+    ```
 
 <img width="387" alt="image" src="https://github.com/idkwhatimdoingimserious/Pump-Fun-Sniper-Solana/assets/143815179/bbc9aa31-b180-453f-b1e1-6dedb125b150">
 
@@ -33,4 +69,6 @@ npm start
 
 <img width="958" alt="image" src="https://github.com/idkwhatimdoingimserious/Pump-Fun-Sniper-Solana/assets/143815179/dfb0ba1d-0be4-4394-9bcc-907c2d70ae4b">
 
+For further assistance, feel free to reach out on Telegram: @ccc3666.
 
+Enjoy trading on Pump.Fun with Pump-Fun-Sniper-Solana!
