@@ -1,7 +1,7 @@
 # Pump-Fun-Sniper-Solana
 Solana tool to buy the latests coins on Pump.Fun as well as the King of The Hill coins. Set your inteded profit % to automatically sell once reached. Custom RPC support. Simply add your private key, the RPC you wish to use and you're ready to go. 
 
-contact me at tg @ccc3666
+contact me at tg @ccc3666 with any questions!
 
 To run: 
 
