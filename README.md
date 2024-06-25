@@ -69,6 +69,4 @@ For any questions, reach out to me on Telegram: @ccc3666.
 
 <img width="958" alt="image" src="https://github.com/idkwhatimdoingimserious/Pump-Fun-Sniper-Solana/assets/143815179/dfb0ba1d-0be4-4394-9bcc-907c2d70ae4b">
 
-For further assistance, feel free to reach out on Telegram: @ccc3666.
 
-Enjoy trading on Pump.Fun with Pump-Fun-Sniper-Solana!
