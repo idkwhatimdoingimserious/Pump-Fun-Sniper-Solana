@@ -25,8 +25,8 @@ const PUMP_FUN_PROGRAM = new PublicKey("6EF8rrecthR5Dkzon8Nwu78hRvfCKubJ14M5uBEw
 const PUMP_FUN_ACCOUNT = new PublicKey("Ce6TQqeHC9p8KetsN6JsjHK7UTZk7nasjjnr7XxXp9F1");
 const SYSTEM_PROGRAM_ID = SystemProgram.programId;
 
-const PRIVATE_KEY = 'YOUR_PRIVATE_KEY_HERE';
-const CUSTOM_RPC_URL = 'YOUR_RPC_URL_HERE';
+const PRIVATE_KEY = 'PRIVATE_KEY_HERE';
+const CUSTOM_RPC_URL = 'RPC_URL_HERE';
 
 const STATE_FILE = path.join(__dirname, 'purchasedCoins.json');
 const SETTINGS_FILE = path.join(__dirname, 'settings.json');
@@ -110,6 +110,12 @@ const fetchLatestCoins = async (limit = 40) => {
     return response.json();
 };
 
+const getBalances = async (publicAddress) => {
+    const response = await fetch(`https://frontend-api.pump.fun/balances/${publicAddress}`);
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+    return response.json();
+};
+
 const checkIfAuthoritiesRevoked = async (mintAddress) => {
     const connection = new Connection(CUSTOM_RPC_URL || clusterApiUrl("mainnet-beta"), 'confirmed');
     const mintPubkey = new PublicKey(mintAddress);
@@ -166,61 +172,111 @@ const sendAndConfirmTransactionWrapper = async (connection, transaction, signers
     return null;
 };
 
-const displayLatestCoins = async (limit = 20) => {
-    const latestCoins = await fetchLatestCoins(limit * 2); // Fetch more to filter
-    const filteredCoins = await filterCoins(latestCoins).then(coins => coins.slice(0, limit));
-    if (filteredCoins.length === 0) {
-        console.log('No coins matched the filter criteria.');
-        return null;
-    }
-    const inquirer = await import('inquirer');
-    const answers = await inquirer.default.prompt([
-        {
-            type: 'list',
-            name: 'selectedCoin',
-            message: 'Select a coin to view details or return to menu:',
-            choices: filteredCoins.map((coin, index) => ({
-                name: `${coin.name} (${coin.symbol})`,
-                value: index
-            })).concat({ name: 'Return to menu', value: 'return' })
-        }
-    ]);
+const displayLatestCoins = async (connection, limit = 20) => {
+    const { default: chalk } = await import('chalk');
+    const { default: inquirer } = await import('inquirer');
 
-    return answers.selectedCoin === 'return' ? null : filteredCoins[answers.selectedCoin];
+    while (true) {
+        console.log(chalk.yellow('Fetching latest coins...'));
+        const latestCoins = await fetchLatestCoins(limit * 2); // Fetch more to filter
+        const filteredCoins = await filterCoins(latestCoins, connection).then(coins => coins.slice(0, limit));
+
+        if (filteredCoins.length === 0) {
+            console.log(chalk.red('No coins matched the filter criteria.'));
+            return;
+        }
+
+        const choices = filteredCoins.map((coin, index) => ({
+            name: `${index + 1}. ${coin.name} (${coin.symbol}) - Market Cap: $${coin.usd_market_cap.toFixed(2)}`,
+            value: index
+        }));
+        choices.push({ name: 'Refresh', value: 'refresh' }, { name: 'Return to main menu', value: 'return' });
+
+        const { selectedCoin } = await inquirer.prompt([
+            {
+                type: 'list',
+                name: 'selectedCoin',
+                message: 'Select a coin to view details, refresh the list, or return to main menu:',
+                choices: choices
+            }
+        ]);
+
+        if (selectedCoin === 'return') {
+            break;
+        } else if (selectedCoin === 'refresh') {
+            continue;
+        }
+
+        const coin = filteredCoins[selectedCoin];
+        await displayCoinDetails(connection, coin);
+    }
 };
 
-const displayCoinDetails = async (coin) => {
-    const connection = new Connection(CUSTOM_RPC_URL || clusterApiUrl("mainnet-beta"), 'confirmed');
-    const isRevoked = await checkIfAuthoritiesRevoked(coin.mint);
+const displayCoinDetails = async (connection, coin) => {
+    const fetch = require('node-fetch'); // Ensure node-fetch is installed in your environment
+    const { default: chalk } = await import('chalk');
 
-    console.log(`
-    Name: ${coin.name}
-    Symbol: ${coin.symbol}
-    Description: ${coin.description}
-    Creator: ${coin.creator}
-    USD Market Cap: ${coin.usd_market_cap}
-    SOL Market Cap: ${coin.market_cap}
-    Created At: ${new Date(coin.created_timestamp).toLocaleString()}
-    Twitter: ${coin.twitter || 'N/A'}
-    Telegram: ${coin.telegram || 'N/A'}
-    Website: ${coin.website || 'N/A'}
-    Freeze and Mint Authority Revoked: ${isRevoked ? 'Yes' : 'No'}
-    `);
+    
 
-    const inquirer = await import('inquirer');
-    const answers = await inquirer.default.prompt([
+    const creatorBalances = await getBalances(coin.creator);
+    const creatorCoinBalance = creatorBalances.find(balance => balance.mint === coin.mint);
+
+    if (creatorCoinBalance) {
+        const creatorSupplyPercentage = (creatorCoinBalance.balance / coin.total_supply) * 100;
+        console.log(chalk.cyan(`Creator holds ${creatorCoinBalance.balance} tokens, which is ${creatorSupplyPercentage.toFixed(2)}% of the total supply.`));
+    } else {
+        console.log(chalk.cyan('Creator does not hold any tokens of this coin.'));
+    }
+
+    const rugCheckResponse = await fetch(`https://api.rugcheck.xyz/v1/tokens/${coin.mint}/report`);
+    const rugCheckData = await rugCheckResponse.json();
+
+    const top10HoldersPct = rugCheckData.topHolders.reduce((acc, holder) => acc + holder.pct, 0);
+    const creatorHolding = rugCheckData.topHolders.find(holder => holder.address === rugCheckData.creator)?.pct || 'N/A';
+    const overallScore = rugCheckData.score;
+
+    const formatRisk = (risk) => {
+        switch (risk.level) {
+            case 'danger':
+                return chalk.red(`- ${risk.name}: ${risk.description} (Level: ${risk.level})`);
+            case 'warn':
+                return chalk.yellow(`- ${risk.name}: ${risk.description} (Level: ${risk.level})`);
+            default:
+                return `- ${risk.name}: ${risk.description} (Level: ${risk.level})`;
+        }
+    };
+
+    console.log(chalk.cyan(`
+        Name: ${chalk.white(coin.name)}
+        USD Market Cap: ${chalk.white(coin.usd_market_cap)}
+        SOL Market Cap: ${chalk.white(coin.market_cap)}
+        Created At: ${chalk.white(new Date(coin.created_timestamp).toLocaleString())}
+        Twitter: ${chalk.white(coin.twitter || 'N/A')}
+        Telegram: ${chalk.white(coin.telegram || 'N/A')}
+        Website: ${chalk.white(coin.website || 'N/A')}
+        Creator Holding: ${chalk.white(`${creatorHolding}%`)}
+        Top 10 Holders Holding: ${chalk.white(`${top10HoldersPct.toFixed(2)}%`)}
+        Overall Risk Score: ${chalk.white(overallScore)}
+        Risks: ${rugCheckData.risks.map(formatRisk).join('\n')}
+    `));
+
+    const { default: inquirer } = await import('inquirer');
+    const { action } = await inquirer.prompt([
         {
             type: 'list',
             name: 'action',
             message: `What would you like to do with ${coin.name}?`,
             choices: [
                 { name: 'Buy this coin', value: 'buy' },
-                { name: 'Return to latest coins', value: 'return' }
+                { name: 'Return to coin list', value: 'return' }
             ]
         }
     ]);
 
-    return answers.action;
+    if (action === 'buy') {
+        await executeBuy(connection, coin);
+        await viewPositionDetails(connection, coin);  // Navigate to position info after buying
+    }
 };
 
 const buyCoin = async (connection, payer, coinData, solIn, priorityFeeInSol = 0.001, slippageDecimal = 0.25) => {
