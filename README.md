@@ -1,4 +1,4 @@
-# Pump-Fun-Sniper-Solana
+# Pump-Fun-Sniper-Solana - Now with developer scanning and anti rug protection!
 
 
 ##ULTIMATE PRIVATE VERSION NOW AVAILABLE. CONTACT ME FOR PURCHASE## PM FOR VIDEO
