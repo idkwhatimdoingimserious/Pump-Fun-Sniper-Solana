@@ -4,6 +4,10 @@
 ##ULTIMATE PRIVATE VERSION NOW AVAILABLE. CONTACT ME FOR PURCHASE## PM FOR VIDEO
 
 A Solana tool to buy the latest coins on Pump.Fun, including King of The Hill coins. Set your intended profit and stop-loss percentages to automatically sell once thresholds are reached. With custom RPC support, simply add your private key and the RPC you wish to use, and you're ready to go.
+ 
+PRIVATE VERSION PREVIEW:
+<img width="885" alt="image" src="https://github.com/idkwhatimdoingimserious/Pump-Fun-Sniper-Solana/assets/143815179/68321773-2717-41a4-bff3-5f41302c8d88">
+
 
 **!! MAKE SURE TO SET YOUR SETTINGS BEFORE TRYING TO RUN THE BOT. !! THIS INCLUDES YOUR PRIVATE KEY AND RPC URL (EDIT THE FILE), BUT ALSO WITHIN THE BOT'S SETTINGS THE MINIMUM MARKET CAP, MINIMUM REPLY COUNT, REQUIRE TELEGRAM, REQUIRE WEBSITE, REQUIRE TWITTER, REQUIRE REVOKED MINT AUTHORITY AND FREEZE AUTHORITY, ENABLE AUTO BUY, SET BUY AMOUNT, ENABLE TAKE PROFIT, SET TAKE PROFIT PERCENTAGE, ENABLE STOP LOSS, SET STOP LOSS PERCENTAGE. (YOU MUST START THE BOT FOR THIS AND THEN SELECT SET SETTINGS FROM THE MENU) !!**
 
