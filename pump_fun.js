@@ -28,6 +28,8 @@ const SYSTEM_PROGRAM_ID = SystemProgram.programId;
 const PRIVATE_KEY = 'PRIVATE_KEY_HERE';
 const CUSTOM_RPC_URL = 'RPC_URL_HERE';
 
+
+
 const STATE_FILE = path.join(__dirname, 'purchasedCoins.json');
 const SETTINGS_FILE = path.join(__dirname, 'settings.json');
 
