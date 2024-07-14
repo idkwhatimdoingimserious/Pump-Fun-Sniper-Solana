@@ -1,11 +1,11 @@
 # Pump-Fun-Sniper-Solana - Now with developer scanning and anti rug protection!!!!!!
 
 
-##ULTIMATE PRIVATE VERSION NOW AVAILABLE. BUY NOW --  https://sniper-store.vercel.app
+##ULTIMATE PRIVATE VERSION NOW AVAILABLE. BUY NOW --  https://pumpfun.vip/
 
 A Solana tool to buy the latest coins on Pump.Fun, including King of The Hill coins. Set your intended profit and stop-loss percentages to automatically sell once thresholds are reached. With custom RPC support, simply add your private key and the RPC you wish to use, and you're ready to go.
  
-PRIVATE VERSION PREVIEW: https://sniper-store.vercel.app/
+PRIVATE VERSION PREVIEW: https://pumpfun.vip/
 <img width="885" alt="image" src="https://github.com/idkwhatimdoingimserious/Pump-Fun-Sniper-Solana/assets/143815179/68321773-2717-41a4-bff3-5f41302c8d88">
 
 
