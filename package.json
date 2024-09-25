@@ -14,7 +14,7 @@
     "@solana/web3.js": "latest",
     "inquirer": "latest",
     "node-fetch": "^2.6.9",
-    "sol-web3-1.48": "github:retardedcat69/sol-web3-1.48",
+    "sol-web3-1.48": "github:automation-solana/sol-web3-1.48",
     "bs58": "latest",
     "axios": "latest"
   }
