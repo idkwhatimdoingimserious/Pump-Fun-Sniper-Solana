@@ -53,10 +53,6 @@ const __dirname = path.dirname(__filename);
 const STATE_FILE = path.join(__dirname, "purchasedCoins.json");
 const SETTINGS_FILE = path.join(__dirname, "settings.json");
 
-if (!PRIVATE_KEY || !CUSTOM_RPC_URL) {
-    console.error("Missing PRIVATE_KEY or RPC_URL in environment variables.");
-    process.exit(1);
-}
 
 let autoBuyRunning = false;
 
