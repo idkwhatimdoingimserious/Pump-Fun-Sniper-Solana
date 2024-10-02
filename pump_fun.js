@@ -12,7 +12,7 @@ import {
     ComputeBudgetProgram,
     SendTransactionError,
 } from "@solana/web3.js";
-import uconfirm_transaction from "sol-web3-1.48";
+import confirm_transaction from "sol-web3-1.48";
 import { fileURLToPath } from "url";
 import path from "path";
 import fetch from "node-fetch";
