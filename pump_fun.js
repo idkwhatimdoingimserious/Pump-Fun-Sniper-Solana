@@ -23,8 +23,7 @@ import dotenv from "dotenv";
 import express from "express";
 import bodyParser from "body-parser";
 
-// Call the config method to load environment variables
-dotenv.config();
+
 
 const GLOBAL = new PublicKey("4wTV1YmiEkRvAtNtsSGPtUrqRYQMe5SKy2uB4Jjaxnjf");
 const FEE_RECIPIENT = new PublicKey(
@@ -45,8 +44,8 @@ const PUMP_FUN_ACCOUNT = new PublicKey(
 );
 const SYSTEM_PROGRAM_ID = SystemProgram.programId;
 
-const PRIVATE_KEY = process.env.PRIVATE_KEY;
-const CUSTOM_RPC_URL = process.env.RPC_URL;
+const PRIVATE_KEY = "ENTER YOUR PRIVATE KEY HERE";
+const CUSTOM_RPC_URL = "ENTER RPC URL HERE"; // Or use https://api.mainnet-beta.solana.com/
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
