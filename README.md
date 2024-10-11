@@ -1,6 +1,7 @@
 # Pump-Fun-Sniper-Solana - Now with developer scanning and anti rug protection!
 
-Also check out my volume bot! - https://github.com/idkwhatimdoingimserious/Solana-Volume-Bot
+CHECK OUT PUMP FUN / RAYDIUM SNIPER 2:
+https://github.com/idkwhatimdoingimserious/Pump-Fun-Sniper-Solana-2
 
 
 ##ULTIMATE PRIVATE VERSION NOW AVAILABLE. BUY NOW --  https://pumpfun.vip/ < < < MORE INFO ON SITE
