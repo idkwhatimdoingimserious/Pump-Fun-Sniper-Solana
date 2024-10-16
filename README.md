@@ -1,4 +1,4 @@
-# Pump-Fun-Sniper-Solana - Now with developer scanning and anti rug protection!!!
+# Pump-Fun-Sniper-Solana - Now with developer scanning and anti rug protection!
 
 CHECK OUT PUMP FUN / RAYDIUM SNIPER 2:
 https://github.com/idkwhatimdoingimserious/Pump-Fun-Sniper-Solana-2
